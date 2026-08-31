@@ -1,4 +1,4 @@
-# TV Catalog
+# TV
 
 一个聚合公开影视目录的静态前端，并通过 Cloudflare Worker 提供同源数据网关。
 

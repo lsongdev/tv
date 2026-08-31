@@ -1,11 +1,11 @@
 {
-  "name": "聚合影库",
-  "short_name": "影库",
+  "name": "Lsong’s TV",
+  "short_name": "TV",
   "description": "多个公开影视目录，一处检索与整理。",
   "id": "/",
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#0d0f12",
-  "background_color": "#0d0f12",
+  "theme_color": "#e8fbfe",
+  "background_color": "#ffffff",
   "categories": ["entertainment", "video"]
 }

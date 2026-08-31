@@ -28,7 +28,7 @@ export function parseEpisodes(playUrl, playFrom = '') {
         return {
           name: name?.trim() || `第 ${index + 1} 集`,
           url,
-          source: sourceNames[groupIndex] || `线路 ${groupIndex + 1}`,
+          line: sourceNames[groupIndex] || `线路 ${groupIndex + 1}`,
         };
       })
       .filter(Boolean),
@@ -36,6 +36,13 @@ export function parseEpisodes(playUrl, playFrom = '') {
 }
 
 export function normalizeVideo(raw, source) {
+  const episodes = parseEpisodes(raw.vod_play_url, raw.vod_play_from).map(episode => ({
+    ...episode,
+    catalogSource: source.name,
+    sourceId: source.id,
+    groupKey: `${source.id}:${episode.line}`,
+  }));
+
   return {
     key: `${source.id}:${raw.vod_id}`,
     sourceId: source.id,
@@ -57,7 +64,7 @@ export function normalizeVideo(raw, source) {
       .replace(/\s+/g, ' ')
       .trim(),
     updatedAt: raw.vod_time || '',
-    episodes: parseEpisodes(raw.vod_play_url, raw.vod_play_from),
+    episodes,
   };
 }
 
@@ -117,10 +124,24 @@ export async function fetchVideos(sources, params, proxy = DEFAULT_PROXY) {
   rawVideos.forEach(video => {
     const dedupeKey = `${video.title}|${video.year}|${video.type}`;
     const existing = unique.get(dedupeKey);
+    const variant = {
+      sourceId: video.sourceId,
+      sourceName: video.sourceName,
+      id: video.id,
+    };
     if (!existing) {
-      unique.set(dedupeKey, { ...video, sources: [video.sourceName] });
-    } else if (!existing.sources.includes(video.sourceName)) {
-      existing.sources.push(video.sourceName);
+      unique.set(dedupeKey, {
+        ...video,
+        sources: [video.sourceName],
+        variants: [variant],
+      });
+    } else {
+      if (!existing.sources.includes(video.sourceName)) {
+        existing.sources.push(video.sourceName);
+      }
+      if (!existing.variants.some(item => item.sourceId === variant.sourceId && item.id === variant.id)) {
+        existing.variants.push(variant);
+      }
     }
   });
 
