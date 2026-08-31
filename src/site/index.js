@@ -1,5 +1,6 @@
 import { h, render } from 'https://cdn.jsdelivr.net/npm/preact@10.29.8/+esm';
-import { useEffect, useState } from 'https://cdn.jsdelivr.net/npm/preact@10.29.8/hooks/+esm';
+import { useEffect, useRef, useState } from 'https://cdn.jsdelivr.net/npm/preact@10.29.8/hooks/+esm';
+import { bindDialog, showDialog } from 'https://lsong.org/scripts/dom/dialog.js';
 import { DEFAULT_PROXY, fetchDetail, fetchVideos } from './client.js';
 
 const FALLBACK_POSTER = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="420" height="600" viewBox="0 0 420 600"%3E%3Crect width="420" height="600" fill="%23f1f3f5"/%3E%3Ccircle cx="210" cy="260" r="70" fill="none" stroke="%23cbd0d6" stroke-width="2"/%3E%3Cpath d="M190 222l62 38-62 38z" fill="%23cbd0d6"/%3E%3Ctext x="210" y="370" text-anchor="middle" fill="%23868e96" font-family="sans-serif" font-size="18"%3ENO POSTER%3C/text%3E%3C/svg%3E';
@@ -20,6 +21,15 @@ const routeKey = (sourceId, videoId) => `${sourceId}:${videoId}`;
 const variantStorageKey = key => `tv:variants:${key}`;
 const isHlsUrl = url => /\.m3u8(?:$|[?#])/i.test(url);
 const isDirectMediaUrl = url => /\.(?:m3u8|mp4|m4v|webm|ogv|ogg)(?:$|[?#])/i.test(url);
+const SETTINGS_EVENT = 'tv:open-settings';
+
+function openSettings() {
+  window.dispatchEvent(new Event(SETTINGS_EVENT));
+}
+
+function SettingsTrigger({ children }) {
+  return h('button', { className: 'settings-trigger', type: 'button', onClick: openSettings }, children);
+}
 
 function AppHeader() {
   return h('header', { className: 'navbar site-header' }, [
@@ -46,7 +56,7 @@ function AppFooter() {
     ]),
     h('p', null, 'Independent software, made with care.'),
     h('nav', { 'aria-label': 'Footer navigation' }, [
-      h('a', { href: '#/settings' }, 'Settings'),
+      h(SettingsTrigger, null, 'Settings'),
       h('a', { href: 'mailto:hi@lsong.org' }, 'Email'),
       h('a', { href: 'https://lsong.org/terms.html' }, 'Terms'),
       h('a', { href: 'https://lsong.org/privacy.html' }, 'Privacy'),
@@ -201,7 +211,7 @@ function HomeView() {
       h('p', { className: 'source-count' }, [
         `${sources.length || '—'} 个数据源已配置`,
         h('span', null, ' · '),
-        h('a', { href: '#/settings' }, '连接设置'),
+        h(SettingsTrigger, null, '连接设置'),
       ]),
     ]),
     h('section', { className: 'catalog-section', 'aria-labelledby': 'catalog-title' }, [
@@ -406,29 +416,55 @@ function DetailView({ id }) {
   ]);
 }
 
-function SettingsView() {
+function SettingsDialog() {
   const [proxy, setProxy] = useState(getProxy());
-  return h(PageShell, { mainClass: 'settings-page' }, [
-    h('a', { href: '#/', className: 'back-link' }, '← 返回 TV'),
-    h('p', { className: 'eyebrow' }, 'CONNECTION'),
-    h('h1', null, '数据连接'),
-    h('p', { className: 'muted' }, '部署在 Cloudflare Workers 时使用同源 API。下面的代理地址仅供 GitHub Pages 或普通静态预览回退使用。'),
-    h('label', { htmlFor: 'proxy' }, '静态托管回退代理'),
-    h('input', { className: 'input input-block', id: 'proxy', value: proxy, onInput: event => setProxy(event.currentTarget.value) }),
-    h('button', {
-      className: 'button primary-button',
-      onClick: () => {
+  const dialogRef = useRef(null);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return undefined;
+    const unbind = bindDialog(dialog);
+    const open = () => {
+      setProxy(getProxy());
+      showDialog(dialog, { initialFocus: '#proxy' });
+    };
+    window.addEventListener(SETTINGS_EVENT, open);
+    return () => {
+      window.removeEventListener(SETTINGS_EVENT, open);
+      unbind();
+    };
+  }, []);
+
+  return h('dialog', { className: 'dialog settings-dialog', ref: dialogRef },
+    h('form', {
+      onSubmit: event => {
+        event.preventDefault();
         localStorage.setItem('api_proxy', proxy.trim());
-        window.location.hash = '#/';
+        dialogRef.current?.close('save');
         window.location.reload();
       },
-    }, '保存设置'),
-  ]);
+    }, [
+      h('header', { className: 'dialog-header' }, [
+        h('div', null, [h('p', { className: 'eyebrow' }, 'CONNECTION'), h('h2', null, '数据连接')]),
+        h('button', { className: 'dialog-close', type: 'button', 'data-dialog-close': true, 'aria-label': '关闭设置' }, '×'),
+      ]),
+      h('div', { className: 'dialog-body' }, [
+        h('p', { className: 'muted' }, '部署在 Cloudflare Workers 时使用同源 API。下面的代理地址仅供 GitHub Pages 或普通静态预览回退使用。'),
+        h('label', { className: 'dialog-field', htmlFor: 'proxy' }, [
+          h('span', null, '静态托管回退代理'),
+          h('input', { className: 'input', id: 'proxy', value: proxy, onInput: event => setProxy(event.currentTarget.value) }),
+        ]),
+      ]),
+      h('footer', { className: 'dialog-footer' }, [
+        h('button', { className: 'button', type: 'button', 'data-dialog-close': true }, '取消'),
+        h('button', { className: 'button primary-button', type: 'submit' }, '保存设置'),
+      ]),
+    ]),
+  );
 }
 
 function currentRoute() {
   const path = window.location.hash.replace(/^#/, '') || '/';
-  if (path === '/settings') return { name: 'settings' };
   if (path.startsWith('/detail/')) return { name: 'detail', id: path.slice('/detail/'.length) };
   return { name: 'home' };
 }
@@ -440,9 +476,10 @@ function App() {
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
-  if (route.name === 'settings') return h(SettingsView);
-  if (route.name === 'detail') return h(DetailView, { id: route.id });
-  return h(HomeView);
+  return h('div', null, [
+    route.name === 'detail' ? h(DetailView, { id: route.id }) : h(HomeView),
+    h(SettingsDialog),
+  ]);
 }
 
 render(h(App), document.getElementById('app'));

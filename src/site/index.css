@@ -37,15 +37,24 @@ input {
 }
 
 .site-header nav a,
-.site-footer nav a {
+.site-footer nav a,
+.settings-trigger {
   color: var(--color-text-muted, #697078);
   font-size: 14px;
   text-decoration: none;
 }
 
+.settings-trigger {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
 .site-header nav a:hover,
 .site-header nav a.active,
-.site-footer nav a:hover {
+.site-footer nav a:hover,
+.settings-trigger:hover {
   color: var(--color-text, #16191d);
 }
 
@@ -92,8 +101,11 @@ input {
   font-size: 12px;
 }
 
-.source-count a {
+.source-count .settings-trigger {
+  display: inline;
+  font-size: inherit;
   color: inherit;
+  text-decoration: underline;
   text-underline-offset: 3px;
 }
 
@@ -311,8 +323,7 @@ input {
   object-fit: cover;
 }
 
-.detail-copy h1,
-.settings-page h1 {
+.detail-copy h1 {
   margin: 14px 0 0;
   font-size: clamp(44px, 7vw, 80px);
   line-height: .95;
@@ -473,26 +484,18 @@ input {
   text-decoration: none;
 }
 
-.settings-page {
-  max-width: 720px;
-  min-height: 70vh;
-  padding-block: 56px 90px;
+.settings-dialog {
+  --dialog-width: 560px;
 }
 
-.settings-page .muted {
-  margin: 26px 0 42px;
+.settings-dialog .dialog-header .eyebrow {
+  margin: 0 0 6px;
+}
+
+.settings-dialog .muted {
+  margin: 0 0 28px;
   color: var(--color-text-muted, #697078);
   line-height: 1.7;
-}
-
-.settings-page label {
-  display: block;
-  margin-bottom: 10px;
-  font-size: 13px;
-}
-
-.settings-page .primary-button {
-  margin-top: 18px;
 }
 
 /* Skeletons ---------------------------------------------------------- */
