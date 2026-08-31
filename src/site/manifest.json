@@ -1,9 +1,9 @@
 {
   "name": "Lsong’s TV",
   "short_name": "TV",
-  "description": "多个公开影视目录，一处检索与整理。",
+  "description": "电影、剧集、动漫与综艺，一个搜索框，找到下一部想看的。",
   "id": "/",
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
   "theme_color": "#e8fbfe",
   "background_color": "#ffffff",

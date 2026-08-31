@@ -13,6 +13,17 @@ function splitGroups(value) {
   return String(value || '').split('$$$').filter(Boolean);
 }
 
+export function normalizeWorkTitle(value) {
+  return String(value || '')
+    .normalize('NFKC')
+    .toLocaleLowerCase()
+    .replace(/[\p{P}\p{S}\s]+/gu, '');
+}
+
+export function normalizeWorkYear(value) {
+  return String(value || '').match(/(?:18|19|20)\d{2}/)?.[0] || '';
+}
+
 function normalizeDescription(value) {
   const decoder = document.createElement('textarea');
   decoder.innerHTML = String(value || '');
@@ -86,7 +97,7 @@ function buildUrl(source, params) {
 }
 
 export async function fetchSource(source, params = {}, proxy = DEFAULT_PROXY) {
-  const apiUrl = new URL('./api/vod', window.location.href);
+  const apiUrl = new URL('/api/vod', window.location.origin);
   apiUrl.searchParams.set('source', source.id);
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
@@ -129,7 +140,7 @@ export async function fetchVideos(sources, params, proxy = DEFAULT_PROXY) {
 
   const unique = new Map();
   rawVideos.forEach(video => {
-    const dedupeKey = `${video.title}|${video.year}|${video.type}`;
+    const dedupeKey = `${normalizeWorkTitle(video.title)}|${normalizeWorkYear(video.year)}`;
     const existing = unique.get(dedupeKey);
     const variant = {
       sourceId: video.sourceId,

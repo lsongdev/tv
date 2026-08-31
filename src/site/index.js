@@ -1,7 +1,13 @@
 import { h, render } from 'https://cdn.jsdelivr.net/npm/preact@10.29.8/+esm';
 import { useEffect, useRef, useState } from 'https://cdn.jsdelivr.net/npm/preact@10.29.8/hooks/+esm';
 import { bindDialog, showDialog } from 'https://lsong.org/scripts/dom/dialog.js';
-import { DEFAULT_PROXY, fetchDetail, fetchVideos } from './client.js';
+import {
+  DEFAULT_PROXY,
+  fetchDetail,
+  fetchVideos,
+  normalizeWorkTitle,
+  normalizeWorkYear,
+} from './client.js';
 
 const FALLBACK_POSTER = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="420" height="600" viewBox="0 0 420 600"%3E%3Crect width="420" height="600" fill="%23f1f3f5"/%3E%3Ccircle cx="210" cy="260" r="70" fill="none" stroke="%23cbd0d6" stroke-width="2"/%3E%3Cpath d="M190 222l62 38-62 38z" fill="%23cbd0d6"/%3E%3Ctext x="210" y="370" text-anchor="middle" fill="%23868e96" font-family="sans-serif" font-size="18"%3ENO POSTER%3C/text%3E%3C/svg%3E';
 const FILTERS = [
@@ -13,15 +19,26 @@ const FILTERS = [
 ];
 
 const getProxy = () => localStorage.getItem('api_proxy') || DEFAULT_PROXY;
-const loadSources = () => fetch('./vod.json').then(response => {
+const loadSources = () => fetch('/vod.json').then(response => {
   if (!response.ok) throw new Error('无法读取数据源配置');
   return response.json();
 });
-const routeKey = (sourceId, videoId) => `${sourceId}:${videoId}`;
-const variantStorageKey = key => `tv:variants:${key}`;
 const isHlsUrl = url => /\.m3u8(?:$|[?#])/i.test(url);
 const isDirectMediaUrl = url => /\.(?:m3u8|mp4|m4v|webm|ogv|ogg)(?:$|[?#])/i.test(url);
 const SETTINGS_EVENT = 'tv:open-settings';
+
+function pathTitle(value) {
+  return String(value || '')
+    .normalize('NFKC')
+    .replace(/\s+/g, ' ')
+    .replaceAll('/', '-')
+    .trim();
+}
+
+function workPath({ title, year }, episodeNumber = '') {
+  const base = `/s/${encodeURIComponent(normalizeWorkYear(year) || '0')}/${encodeURIComponent(pathTitle(title))}`;
+  return episodeNumber ? `${base}/${encodeURIComponent(episodeNumber)}` : base;
+}
 
 function openSettings() {
   window.dispatchEvent(new Event(SETTINGS_EVENT));
@@ -33,7 +50,7 @@ function SettingsTrigger({ children }) {
 
 function AppHeader() {
   return h('header', { className: 'navbar site-header' }, [
-    h('a', { className: 'navbar-brand', href: '#/', 'aria-label': 'Lsong’s TV' }, [
+    h('a', { className: 'navbar-brand', href: '/', 'aria-label': 'Lsong’s TV' }, [
       h('img', { className: 'navbar-brand-mark', src: 'https://lsong.org/assets/web/icon.png', alt: '', 'aria-hidden': 'true' }),
       h('span', { prefix: 'Lsong’s ', className: 'title' }, 'TV'),
     ]),
@@ -42,7 +59,7 @@ function AppHeader() {
       h('a', { href: 'https://lsong.org/posts' }, 'Writing'),
       h('a', { href: 'https://lsong.org/games' }, 'Games'),
       h('a', { href: 'https://lsong.org/music' }, 'Music'),
-      h('a', { href: '#/', className: 'active' }, 'TV'),
+      h('a', { href: '/', className: 'active' }, 'TV'),
     ]),
     h('hr'),
   ]);
@@ -92,28 +109,10 @@ function SearchForm({ query, setQuery, onSearch }) {
   ]);
 }
 
-function rememberVideoVariants(video) {
-  try {
-    sessionStorage.setItem(variantStorageKey(routeKey(video.sourceId, video.id)), JSON.stringify(video.variants || []));
-  } catch (_error) {
-    // Storage is optional; direct links still load the primary source.
-  }
-}
-
-function readVideoVariants(sourceId, videoId) {
-  try {
-    const value = JSON.parse(sessionStorage.getItem(variantStorageKey(routeKey(sourceId, videoId))) || '[]');
-    return Array.isArray(value) ? value : [];
-  } catch (_error) {
-    return [];
-  }
-}
-
 function VideoCard({ video }) {
   return h('a', {
     className: 'video-card',
-    href: `#/detail/${encodeURIComponent(video.sourceId)}:${encodeURIComponent(video.id)}`,
-    onClick: () => rememberVideoVariants(video),
+    href: workPath(video),
   }, [
     h('div', { className: 'poster-wrap' }, [
       h('img', {
@@ -227,8 +226,17 @@ function HomeView() {
   ]);
 }
 
-async function loadAggregatedDetail(config, sourceId, videoId) {
-  const variants = [{ sourceId, id: videoId }, ...readVideoVariants(sourceId, videoId)].filter((item, index, list) =>
+async function loadAggregatedDetail(config, title, year) {
+  const search = await fetchVideos(config, { ac: 'detail', wd: title, pg: 1 }, getProxy());
+  const normalizedTitle = normalizeWorkTitle(title);
+  const normalizedYear = normalizeWorkYear(year);
+  const titleMatches = search.videos.filter(video => normalizeWorkTitle(video.title) === normalizedTitle);
+  const match = titleMatches.find(video => normalizeWorkYear(video.year) === normalizedYear)
+    || titleMatches.find(video => !normalizeWorkYear(video.year))
+    || (!normalizedYear ? titleMatches[0] : null);
+  if (!match) throw new Error('找不到与分享地址匹配的作品');
+
+  const variants = (match.variants || []).filter((item, index, list) =>
     item.sourceId && item.id && list.findIndex(candidate => candidate.sourceId === item.sourceId && candidate.id === item.id) === index,
   );
   const results = await Promise.allSettled(variants.map(async variant => {
@@ -238,9 +246,11 @@ async function loadAggregatedDetail(config, sourceId, videoId) {
   }));
   const details = results.filter(result => result.status === 'fulfilled' && result.value).map(result => result.value);
   if (!details.length) throw new Error('该条目已不存在或所有来源均不可用');
-  const main = details.find(item => item.sourceId === sourceId && item.id === videoId) || details[0];
+  const main = details.find(item => normalizeWorkYear(item.year) === normalizedYear) || details[0];
   return {
     ...main,
+    stableTitle: title,
+    stableYear: normalizedYear || normalizeWorkYear(main.year) || '0',
     sources: [...new Set(details.map(item => item.sourceName))],
     episodes: details.flatMap(item => item.episodes),
   };
@@ -262,6 +272,46 @@ function groupEpisodes(episodes) {
     Number(right.episodes.some(item => isDirectMediaUrl(item.url)))
     - Number(left.episodes.some(item => isDirectMediaUrl(item.url))),
   );
+}
+
+function chineseNumber(value) {
+  const digits = { 零: 0, 〇: 0, 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 };
+  if (/^[零〇一二两三四五六七八九]$/.test(value)) return digits[value];
+  if (!/^[零〇一二两三四五六七八九十百]+$/.test(value)) return null;
+  let total = 0;
+  let current = 0;
+  for (const character of value) {
+    if (character === '百') {
+      total += (current || 1) * 100;
+      current = 0;
+    } else if (character === '十') {
+      total += (current || 1) * 10;
+      current = 0;
+    } else {
+      current = digits[character];
+    }
+  }
+  return total + current;
+}
+
+function episodeNumber(episode, index) {
+  const name = String(episode?.name || '').normalize('NFKC').trim();
+  const numeric = name.match(/第\s*0*(\d{1,4})\s*(?:集|话|期)/)
+    || name.match(/^(?:EP(?:ISODE)?|E)\s*0*(\d{1,4})$/i)
+    || name.match(/^0*(\d{1,4})(?:\s*(?:集|话|期))?$/);
+  if (numeric) return String(Number(numeric[1]));
+  const chinese = name.match(/第\s*([零〇一二两三四五六七八九十百]+)\s*(?:集|话|期)/);
+  const parsed = chinese ? chineseNumber(chinese[1]) : null;
+  return String(parsed || index + 1);
+}
+
+function findEpisode(groups, number) {
+  if (!number) return null;
+  for (const group of groups) {
+    const index = group.episodes.findIndex((episode, episodeIndex) => episodeNumber(episode, episodeIndex) === number);
+    if (index >= 0) return { group, episode: group.episodes[index], index };
+  }
+  return null;
 }
 
 function VideoPlayer({ episode }) {
@@ -341,38 +391,51 @@ function VideoPlayer({ episode }) {
   ]);
 }
 
-function DetailView({ id }) {
+function DetailView({ title, year, requestedEpisode }) {
   const [video, setVideo] = useState(null);
   const [episode, setEpisode] = useState(null);
   const [activeGroup, setActiveGroup] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const decoded = decodeURIComponent(id);
-    const separator = decoded.indexOf(':');
-    const sourceId = decoded.slice(0, separator);
-    const videoId = decoded.slice(separator + 1);
+    setVideo(null);
+    setError('');
     loadSources()
-      .then(config => loadAggregatedDetail(config, sourceId, videoId))
+      .then(config => loadAggregatedDetail(config, title, year))
       .then(result => {
-        const initialGroup = groupEpisodes(result.episodes)[0];
+        const groups = groupEpisodes(result.episodes);
+        const requested = findEpisode(groups, requestedEpisode);
+        const initialGroup = requested?.group || groups[0];
         setVideo(result);
         setActiveGroup(initialGroup?.key || '');
-        setEpisode(initialGroup?.episodes[0] || null);
+        setEpisode(requested?.episode || initialGroup?.episodes[0] || null);
       })
       .catch(reason => setError(reason.message));
-  }, [id]);
+  }, [title, year, requestedEpisode]);
 
   if (error) {
     return h(PageShell, null, h('div', { className: 'state full-page' }, [
       h('p', null, `加载失败：${error}`),
-      h('a', { href: '#/' }, '返回首页'),
+      h('a', { href: '/' }, '返回首页'),
     ]));
   }
   if (!video) return h(DetailSkeleton);
 
   const groups = groupEpisodes(video.episodes);
   const selectedGroup = groups.find(group => group.key === activeGroup) || groups[0];
+  const setShareableEpisode = (nextEpisode, index) => {
+    setEpisode(nextEpisode);
+    window.history.replaceState(null, '', workPath({ title: video.stableTitle, year: video.stableYear }, episodeNumber(nextEpisode, index)));
+  };
+  const selectGroup = group => {
+    const currentIndex = selectedGroup?.episodes.findIndex(item => item.url === episode?.url) ?? -1;
+    const currentNumber = episode ? episodeNumber(episode, Math.max(currentIndex, 0)) : '';
+    const nextIndex = group.episodes.findIndex((item, index) => episodeNumber(item, index) === currentNumber);
+    const resolvedIndex = nextIndex >= 0 ? nextIndex : 0;
+    const nextEpisode = group.episodes[resolvedIndex] || null;
+    setActiveGroup(group.key);
+    if (nextEpisode) setShareableEpisode(nextEpisode, resolvedIndex);
+  };
   return h(PageShell, { mainClass: 'detail-page' }, [
     h('section', { className: 'detail-hero' }, [
       h('img', {
@@ -404,11 +467,11 @@ function DetailView({ id }) {
         className: group.key === selectedGroup?.key ? 'active' : '',
         role: 'tab',
         'aria-selected': group.key === selectedGroup?.key,
-        onClick: () => { setActiveGroup(group.key); setEpisode(group.episodes[0] || null); },
+        onClick: () => selectGroup(group),
       }, [h('span', null, group.label), h('small', null, `${group.episodes.length} 集`)]))),
-      h('div', { className: 'episodes' }, selectedGroup.episodes.map(item => h('button', {
+      h('div', { className: 'episodes' }, selectedGroup.episodes.map((item, index) => h('button', {
         className: episode?.url === item.url ? 'active' : '',
-        onClick: () => setEpisode(item),
+        onClick: () => setShareableEpisode(item, index),
       }, item.name))),
     ]) : h('div', { className: 'notice' }, '该条目暂未返回可用播放地址。'),
   ]);
@@ -462,20 +525,31 @@ function SettingsDialog() {
 }
 
 function currentRoute() {
-  const path = window.location.hash.replace(/^#/, '') || '/';
-  if (path.startsWith('/detail/')) return { name: 'detail', id: path.slice('/detail/'.length) };
+  const segments = window.location.pathname.split('/').filter(Boolean);
+  if (segments[0] === 's' && (segments.length === 3 || segments.length === 4)) {
+    try {
+      return {
+        name: 'detail',
+        year: decodeURIComponent(segments[1]),
+        title: decodeURIComponent(segments[2]),
+        requestedEpisode: segments[3] ? decodeURIComponent(segments[3]) : '',
+      };
+    } catch (_error) {
+      return { name: 'home' };
+    }
+  }
   return { name: 'home' };
 }
 
 function App() {
   const [route, setRoute] = useState(currentRoute());
   useEffect(() => {
-    const onHashChange = () => setRoute(currentRoute());
-    window.addEventListener('hashchange', onHashChange);
-    return () => window.removeEventListener('hashchange', onHashChange);
+    const onPopState = () => setRoute(currentRoute());
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
   }, []);
   return h('div', null, [
-    route.name === 'detail' ? h(DetailView, { id: route.id }) : h(HomeView),
+    route.name === 'detail' ? h(DetailView, route) : h(HomeView),
     h(SettingsDialog),
   ]);
 }
