@@ -13,6 +13,16 @@ function splitGroups(value) {
   return String(value || '').split('$$$').filter(Boolean);
 }
 
+function normalizeDescription(value) {
+  const decoder = document.createElement('textarea');
+  decoder.innerHTML = String(value || '');
+  return decoder.value
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\u00a0/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export function parseEpisodes(playUrl, playFrom = '') {
   const groups = splitGroups(playUrl);
   const sourceNames = splitGroups(playFrom);
@@ -59,10 +69,7 @@ export function normalizeVideo(raw, source) {
     score: raw.vod_score || '',
     actors: raw.vod_actor || '',
     director: raw.vod_director || '',
-    content: String(raw.vod_content || raw.vod_blurb || '')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim(),
+    content: normalizeDescription(raw.vod_content || raw.vod_blurb),
     updatedAt: raw.vod_time || '',
     episodes,
   };

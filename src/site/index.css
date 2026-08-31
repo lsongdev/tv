@@ -41,20 +41,6 @@
   white-space: nowrap;
 }
 
-.source-count {
-  margin: 16px 0 0;
-  color: var(--color-text-muted, #697078);
-  font-size: 12px;
-}
-
-.source-count .settings-trigger {
-  display: inline;
-  font-size: inherit;
-  color: inherit;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
 .catalog-section {
   padding-block: clamp(64px, 9vw, 100px);
   border-bottom: var(--tv-rule);
@@ -271,9 +257,27 @@
   margin: 24px 0;
 }
 
+.detail-description {
+  margin-top: clamp(36px, 6vw, 64px);
+  padding: clamp(24px, 4vw, 42px);
+  border: var(--tv-rule);
+  border-radius: var(--tv-radius);
+  background: var(--color-surface-subtle, #f4f6f7);
+}
+
+.detail-description .eyebrow {
+  margin-bottom: 10px;
+}
+
+.detail-description h2 {
+  margin: 0 0 18px;
+  font-size: clamp(26px, 4vw, 38px);
+  letter-spacing: -.04em;
+}
+
 .plot {
-  max-width: 720px;
-  margin: 0 0 22px;
+  max-width: 960px;
+  margin: 0;
   color: var(--color-text-muted, #697078);
   font-size: 15px;
   line-height: 1.8;

@@ -205,14 +205,9 @@ function HomeView() {
       h('p', { className: 'eyebrow' }, 'LSONG / TV'),
       h('h1', { id: 'hero-title', className: 'site-hero-title' }, query
         ? `搜索「${query}」`
-        : ['找点好看的。', h('br'), h('span', null, '随时开始。')]),
-      h('p', { className: 'site-hero-copy' }, '从多个公开影视目录中检索内容，统一整理片名、详情与播放线路。'),
+        : ['好内容，', h('br'), h('span', null, '不用到处找。')]),
+      h('p', { className: 'site-hero-copy' }, '电影、剧集、动漫与综艺，一个搜索框，找到下一部想看的。'),
       h(SearchForm, { query, setQuery, onSearch: search }),
-      h('p', { className: 'source-count' }, [
-        `${sources.length || '—'} 个数据源已配置`,
-        h('span', null, ' · '),
-        h(SettingsTrigger, null, '连接设置'),
-      ]),
     ]),
     h('section', { className: 'catalog-section', 'aria-labelledby': 'catalog-title' }, [
       h('div', { className: 'catalog-heading' }, [
@@ -390,10 +385,14 @@ function DetailView({ id }) {
         h('p', { className: 'eyebrow' }, `${video.sources.length} SOURCES`),
         h('h1', null, video.title),
         h('div', { className: 'detail-tags' }, [video.type, video.year, video.area, video.remark].filter(Boolean).map(value => h(Tag, null, value))),
-        h('p', { className: 'plot' }, video.content || '暂无剧情简介。'),
         video.director && h('p', { className: 'credit' }, `导演：${video.director}`),
         video.actors && h('p', { className: 'credit' }, `主演：${video.actors}`),
       ]),
+    ]),
+    h('section', { className: 'detail-description', 'aria-labelledby': 'description-title' }, [
+      h('p', { className: 'eyebrow' }, 'STORY'),
+      h('h2', { id: 'description-title' }, '剧情简介'),
+      h('p', { className: 'plot' }, video.content || '暂无剧情简介。'),
     ]),
     groups.length ? h('section', { className: 'play-section' }, [
       h('div', { className: 'section-heading' }, [
