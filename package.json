@@ -1,0 +1,19 @@
+{
+  "name": "tv-catalog",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "npm run build && wrangler dev",
+    "types": "wrangler types ./types/worker-configuration.d.ts",
+    "check": "npm run build && npm run types && tsc --noEmit && wrangler deploy --dry-run",
+    "sources:check": "node scripts/check-sources.mjs",
+    "deploy": "npm run check && wrangler deploy"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "typescript": "^5.9.2",
+    "wrangler": "^4.74.0"
+  }
+}
