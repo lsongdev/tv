@@ -379,7 +379,6 @@ function DetailView({ id }) {
   const groups = groupEpisodes(video.episodes);
   const selectedGroup = groups.find(group => group.key === activeGroup) || groups[0];
   return h(PageShell, { mainClass: 'detail-page' }, [
-    h('a', { href: '#/', className: 'back-link' }, '← 返回 TV'),
     h('section', { className: 'detail-hero' }, [
       h('img', {
         className: 'detail-poster',
@@ -401,6 +400,7 @@ function DetailView({ id }) {
         h('div', null, [h('p', { className: 'eyebrow' }, 'SOURCES / LINES'), h('h2', null, '选择播放线路')]),
         h('span', null, `${groups.length} 条线路 · ${video.episodes.length} 个条目`),
       ]),
+      h(VideoPlayer, { episode }),
       h('div', { className: 'source-tabs', role: 'tablist', 'aria-label': '播放来源与线路' }, groups.map(group => h('button', {
         className: group.key === selectedGroup?.key ? 'active' : '',
         role: 'tab',
@@ -411,7 +411,6 @@ function DetailView({ id }) {
         className: episode?.url === item.url ? 'active' : '',
         onClick: () => setEpisode(item),
       }, item.name))),
-      h(VideoPlayer, { episode }),
     ]) : h('div', { className: 'notice' }, '该条目暂未返回可用播放地址。'),
   ]);
 }
