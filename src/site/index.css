@@ -433,6 +433,14 @@ input {
   background: #2d2514;
 }
 
+.autoplay-notice {
+  padding: 9px 16px;
+  border-top: 1px solid #252a2f;
+  color: #a9b0b7;
+  background: #111417;
+  font-size: 12px;
+}
+
 .now-playing {
   display: flex;
   justify-content: space-between;

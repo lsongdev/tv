@@ -261,16 +261,38 @@ function groupEpisodes(episodes) {
 
 function VideoPlayer({ episode }) {
   const [playerError, setPlayerError] = useState('');
+  const [autoplayMuted, setAutoplayMuted] = useState(false);
   const directMedia = episode && isDirectMediaUrl(episode.url);
 
   useEffect(() => {
     setPlayerError('');
+    setAutoplayMuted(false);
     if (!episode || !directMedia) return undefined;
     const video = document.getElementById('video-player');
     if (!video) return undefined;
     let hls;
+    let autoplayStarted = false;
     const fail = () => setPlayerError('该线路暂时无法加载，请切换上方的其他来源或线路。');
+    const startAutoplay = () => {
+      if (autoplayStarted) return;
+      autoplayStarted = true;
+      void (async () => {
+        try {
+          video.muted = false;
+          await video.play();
+        } catch (_error) {
+          try {
+            video.muted = true;
+            await video.play();
+            setAutoplayMuted(true);
+          } catch (_mutedError) {
+            setPlayerError('浏览器阻止了自动播放，请点击播放器开始。');
+          }
+        }
+      })();
+    };
     video.addEventListener('error', fail);
+    video.addEventListener('canplay', startAutoplay);
 
     if (isHlsUrl(episode.url) && window.Hls?.isSupported()) {
       hls = new window.Hls({ enableWorker: true });
@@ -287,6 +309,7 @@ function VideoPlayer({ episode }) {
 
     return () => {
       video.removeEventListener('error', fail);
+      video.removeEventListener('canplay', startAutoplay);
       hls?.destroy();
       video.removeAttribute('src');
       video.load();
@@ -303,8 +326,9 @@ function VideoPlayer({ episode }) {
     ]);
   }
   return h('div', { className: 'player-shell' }, [
-    h('video', { id: 'video-player', controls: true, playsInline: true, preload: 'metadata' }),
+    h('video', { id: 'video-player', controls: true, playsInline: true, preload: 'auto', autoPlay: true }),
     playerError && h('div', { className: 'player-error', role: 'status' }, playerError),
+    autoplayMuted && h('div', { className: 'autoplay-notice', role: 'status' }, '已静音自动播放，可在播放器中恢复声音。'),
     h('div', { className: 'now-playing' }, [
       h('span', null, episode.name),
       h('span', null, `${episode.catalogSource} / ${episode.line}`),
