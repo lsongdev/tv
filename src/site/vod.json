@@ -11,6 +11,20 @@
     "name": "如意资源",
     "url": "http://cj.rycjapi.com/api.php/provide/vod",
     "format": "maccms-v10",
+    "isEnabled": false
+  },
+  {
+    "id": "hongniu",
+    "name": "红牛资源",
+    "url": "https://www.hongniuzy2.com/api.php/provide/vod/",
+    "format": "maccms-v10",
+    "isEnabled": true
+  },
+  {
+    "id": "uku",
+    "name": "U酷资源",
+    "url": "https://api.ukuapi88.com/api.php/provide/vod/",
+    "format": "maccms-v10",
     "isEnabled": true
   },
   {

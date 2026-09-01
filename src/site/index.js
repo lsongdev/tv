@@ -28,11 +28,7 @@ const isDirectMediaUrl = url => /\.(?:m3u8|mp4|m4v|webm|ogv|ogg)(?:$|[?#])/i.tes
 const SETTINGS_EVENT = 'tv:open-settings';
 
 function pathTitle(value) {
-  return String(value || '')
-    .normalize('NFKC')
-    .replace(/\s+/g, ' ')
-    .replaceAll('/', '-')
-    .trim();
+  return normalizeWorkTitle(value) || 'untitled';
 }
 
 function workPath({ title, year }, episodeNumber = '') {
