@@ -448,7 +448,7 @@ function DetailView({ title, year, requestedEpisode }) {
     ]),
     groups.length ? h('section', { className: 'play-section' }, [
       h('div', { className: 'section-heading' }, [
-        h('div', null, [h('p', { className: 'eyebrow' }, 'SOURCES / LINES'), h('h2', null, '选择播放线路')]),
+        h('div', null, [h('p', { className: 'eyebrow' }, 'SOURCES / LINES'), h('h2', null, 'Now Playing')]),
         h('span', null, `${groups.length} 条线路 · ${video.episodes.length} 个条目`),
       ]),
       h(VideoPlayer, { episode }),
