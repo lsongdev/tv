@@ -163,12 +163,30 @@ function HomeView() {
 
   return h(PageContent, { mainClass: 'layout-content tv-main' }, [
     h('section', { className: 'site-hero tv-hero', 'aria-labelledby': 'hero-title' }, [
-      h('p', { className: 'eyebrow' }, 'LSONG / TV'),
-      h('h1', { id: 'hero-title', className: 'site-hero-title' }, query
-        ? `搜索「${query}」`
-        : ['好内容，', h('br'), h('span', null, '不用到处找。')]),
-      h('p', { className: 'site-hero-copy' }, '电影、剧集、动漫与综艺，一个搜索框，找到下一部想看的。'),
-      h(SearchForm, { query, setQuery, onSearch: search }),
+      h('div', { className: 'tv-hero-copy' }, [
+        h('p', { className: 'eyebrow' }, '今晚，从这里开始'),
+        h('h1', { id: 'hero-title', className: 'site-hero-title' }, query
+          ? `搜索「${query}」`
+          : ['想看的，', h('br'), h('span', null, '马上开播。')]),
+        h('p', { className: 'site-hero-copy' }, '电影、剧集、动漫和综艺，搜到喜欢的，就从这一集开始。'),
+        h(SearchForm, { query, setQuery, onSearch: search }),
+      ]),
+      h('div', { className: 'hero-tv', 'aria-hidden': 'true' }, [
+        h('div', { className: 'hero-tv-antenna' }, [h('i'), h('i')]),
+        h('div', { className: 'hero-tv-body' }, [
+          h('div', { className: 'hero-tv-screen' }, [
+            h('div', { className: 'hero-tv-glow' }),
+            h('span', { className: 'hero-tv-play' }, '▶'),
+            h('div', { className: 'hero-tv-caption' }, [h('i'), h('span', null, 'NOW PLAYING')]),
+          ]),
+          h('div', { className: 'hero-tv-controls' }, [
+            h('div', { className: 'hero-tv-speaker' }, [h('i'), h('i'), h('i'), h('i')]),
+            h('span'),
+            h('b'),
+          ]),
+        ]),
+        h('div', { className: 'hero-tv-shadow' }),
+      ]),
     ]),
     h('section', { className: 'catalog-section', 'aria-labelledby': 'catalog-title' }, [
       h('div', { className: 'catalog-heading' }, [
