@@ -528,4 +528,8 @@ function App() {
   ];
 }
 
-render(h(App), document.getElementById('app'));
+const appRoot = document.getElementById('app');
+appRoot.replaceChildren();
+appRoot.className = 'content';
+appRoot.removeAttribute('aria-busy');
+render(h(App), appRoot);
