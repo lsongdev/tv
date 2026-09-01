@@ -61,6 +61,7 @@
   font-weight: 680;
   line-height: 1;
   letter-spacing: -.05em;
+  white-space: nowrap;
 }
 
 .filter-bar,
