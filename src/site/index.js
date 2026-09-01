@@ -28,7 +28,10 @@ const isDirectMediaUrl = url => /\.(?:m3u8|mp4|m4v|webm|ogv|ogg)(?:$|[?#])/i.tes
 const SETTINGS_EVENT = 'tv:open-settings';
 
 function pathTitle(value) {
-  return normalizeWorkTitle(value) || 'untitled';
+  return String(value || '')
+    .normalize('NFKC')
+    .replace(/\s+/g, ' ')
+    .trim() || 'untitled';
 }
 
 function workPath({ title, year }, episodeNumber = '') {
@@ -223,10 +226,15 @@ function HomeView() {
 }
 
 async function loadAggregatedDetail(config, title, year) {
-  const search = await fetchVideos(config, { ac: 'detail', wd: title, pg: 1 }, getProxy());
   const normalizedTitle = normalizeWorkTitle(title);
   const normalizedYear = normalizeWorkYear(year);
-  const titleMatches = search.videos.filter(video => normalizeWorkTitle(video.title) === normalizedTitle);
+  let search = await fetchVideos(config, { ac: 'detail', wd: title, pg: 1 }, getProxy());
+  let titleMatches = search.videos.filter(video => normalizeWorkTitle(video.title) === normalizedTitle);
+  const fallbackKeyword = [...normalizedTitle].slice(0, 4).join('');
+  if (!titleMatches.length && fallbackKeyword && fallbackKeyword !== title) {
+    search = await fetchVideos(config, { ac: 'detail', wd: fallbackKeyword, pg: 1 }, getProxy());
+    titleMatches = search.videos.filter(video => normalizeWorkTitle(video.title) === normalizedTitle);
+  }
   const match = titleMatches.find(video => normalizeWorkYear(video.year) === normalizedYear)
     || titleMatches.find(video => !normalizeWorkYear(video.year))
     || (!normalizedYear ? titleMatches[0] : null);
@@ -245,7 +253,7 @@ async function loadAggregatedDetail(config, title, year) {
   const main = details.find(item => normalizeWorkYear(item.year) === normalizedYear) || details[0];
   return {
     ...main,
-    stableTitle: title,
+    stableTitle: match.title,
     stableYear: normalizedYear || normalizeWorkYear(main.year) || '0',
     sources: [...new Set(details.map(item => item.sourceName))],
     episodes: details.flatMap(item => item.episodes),
@@ -402,6 +410,8 @@ function DetailView({ title, year, requestedEpisode }) {
         const groups = groupEpisodes(result.episodes);
         const requested = findEpisode(groups, requestedEpisode);
         const initialGroup = requested?.group || groups[0];
+        const canonicalPath = workPath({ title: result.stableTitle, year: result.stableYear }, requestedEpisode);
+        if (window.location.pathname !== canonicalPath) window.history.replaceState(null, '', canonicalPath);
         setVideo(result);
         setActiveGroup(initialGroup?.key || '');
         setEpisode(requested?.episode || initialGroup?.episodes[0] || null);
