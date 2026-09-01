@@ -165,9 +165,11 @@ function HomeView() {
     h('section', { className: 'site-hero tv-hero', 'aria-labelledby': 'hero-title' }, [
       h('div', { className: 'tv-hero-copy' }, [
         h('p', { className: 'eyebrow' }, '今晚，从这里开始'),
-        h('h1', { id: 'hero-title', className: 'site-hero-title' }, query
-          ? `搜索「${query}」`
-          : ['想看的，', h('br'), h('span', null, '马上开播。')]),
+        h('h1', { id: 'hero-title', className: 'site-hero-title' }, [
+          '想看的，',
+          h('br'),
+          h('span', null, '马上开播。'),
+        ]),
         h('p', { className: 'site-hero-copy' }, '电影、剧集、动漫和综艺，搜到喜欢的，就从这一集开始。'),
         h(SearchForm, { query, setQuery, onSearch: search }),
       ]),
