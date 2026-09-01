@@ -10,13 +10,7 @@ import {
 } from './client.js';
 
 const FALLBACK_POSTER = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="420" height="600" viewBox="0 0 420 600"%3E%3Crect width="420" height="600" fill="%23f1f3f5"/%3E%3Ccircle cx="210" cy="260" r="70" fill="none" stroke="%23cbd0d6" stroke-width="2"/%3E%3Cpath d="M190 222l62 38-62 38z" fill="%23cbd0d6"/%3E%3Ctext x="210" y="370" text-anchor="middle" fill="%23868e96" font-family="sans-serif" font-size="18"%3ENO POSTER%3C/text%3E%3C/svg%3E';
-const FILTERS = [
-  { id: 'all', label: '全部' },
-  { id: 'movie', label: '电影', matches: ['片', '电影'] },
-  { id: 'series', label: '剧集', matches: ['剧'] },
-  { id: 'anime', label: '动漫', matches: ['动漫', '动画'] },
-  { id: 'show', label: '综艺', matches: ['综艺'] },
-];
+const ALL_FILTER = '__all__';
 
 const getProxy = () => localStorage.getItem('api_proxy') || DEFAULT_PROXY;
 const loadSources = () => fetch('/vod.json').then(response => {
@@ -165,7 +159,7 @@ function HomeView() {
   const [sources, setSources] = useState([]);
   const [videos, setVideos] = useState([]);
   const [query, setQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState('all');
+  const [activeFilter, setActiveFilter] = useState(ALL_FILTER);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState('');
 
@@ -192,11 +186,21 @@ function HomeView() {
       .catch(error => { setNotice(error.message); setLoading(false); });
   }, []);
 
-  const search = () => { setActiveFilter('all'); requestVideos(sources, query.trim()); };
-  const active = FILTERS.find(filter => filter.id === activeFilter);
-  const visibleVideos = !active?.matches
+  const search = () => { setActiveFilter(ALL_FILTER); requestVideos(sources, query.trim()); };
+  const categoryCounts = videos.reduce((counts, video) => {
+    const category = String(video.type || '未分类').trim() || '未分类';
+    counts.set(category, (counts.get(category) || 0) + 1);
+    return counts;
+  }, new Map());
+  const filters = [
+    { id: ALL_FILTER, label: '全部', count: videos.length },
+    ...[...categoryCounts.entries()]
+      .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0], 'zh-CN'))
+      .map(([label, count]) => ({ id: label, label, count })),
+  ];
+  const visibleVideos = activeFilter === ALL_FILTER
     ? videos
-    : videos.filter(video => active.matches.some(word => video.type.includes(word)));
+    : videos.filter(video => (String(video.type || '未分类').trim() || '未分类') === activeFilter);
 
   return h(PageShell, { mainClass: 'layout-content tv-main' }, [
     h('section', { className: 'site-hero tv-hero', 'aria-labelledby': 'hero-title' }, [
@@ -210,7 +214,8 @@ function HomeView() {
     h('section', { className: 'catalog-section', 'aria-labelledby': 'catalog-title' }, [
       h('div', { className: 'catalog-heading' }, [
         h('h2', { id: 'catalog-title' }, query ? '搜索结果' : '最近更新'),
-        h('nav', { className: 'filter-bar', 'aria-label': '内容分类' }, FILTERS.map(filter => h('button', {
+        h('nav', { className: 'filter-bar', 'aria-label': '内容分类' }, filters.map(filter => h('button', {
+          key: filter.id,
           className: activeFilter === filter.id ? 'active' : '',
           onClick: () => setActiveFilter(filter.id),
         }, filter.label))),
