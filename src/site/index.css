@@ -244,7 +244,7 @@
 }
 
 .detail-copy h1 {
-  margin: 14px 0 0;
+  margin: 0;
   font-size: clamp(44px, 7vw, 80px);
   line-height: .95;
   letter-spacing: -.06em;

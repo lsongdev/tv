@@ -323,7 +323,7 @@ function VideoPlayer({ episode }) {
     if (!video) return undefined;
     let hls;
     let autoplayStarted = false;
-    const fail = () => setPlayerError('该线路暂时无法加载，请切换上方的其他来源或线路。');
+    const fail = () => setPlayerError('该线路暂时无法加载，请在播放器下方切换其他来源或线路。');
     const startAutoplay = () => {
       if (autoplayStarted) return;
       autoplayStarted = true;
@@ -353,7 +353,7 @@ function VideoPlayer({ episode }) {
     } else if (isHlsUrl(episode.url) && video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = episode.url;
     } else if (isHlsUrl(episode.url)) {
-      setPlayerError('当前浏览器不支持 HLS 播放，请切换浏览器或线路。');
+      setPlayerError('当前浏览器不支持 HLS 播放，请在播放器下方切换其他线路，或更换浏览器。');
     } else {
       video.src = episode.url;
     }
@@ -441,7 +441,6 @@ function DetailView({ title, year, requestedEpisode }) {
         onError: event => { event.currentTarget.src = FALLBACK_POSTER; },
       }),
       h('div', { className: 'detail-copy' }, [
-        h('p', { className: 'eyebrow' }, `${video.sources.length} SOURCES`),
         h('h1', null, video.title),
         h('div', { className: 'detail-tags' }, [video.type, video.year, video.area, video.remark].filter(Boolean).map(value => h(Tag, null, value))),
         video.director && h('p', { className: 'credit' }, `导演：${video.director}`),
