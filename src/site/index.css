@@ -1,12 +1,12 @@
 :root {
-  --page-max-width: 1440px;
+  /* --page-max-width: 1440px; */
   --tv-rule: 1px solid var(--color-border, #d9dde1);
   --tv-radius: 10px;
 }
 
-.app-shell>header,
-.app-shell>main,
-.app-shell>footer {
+body > .site-header,
+body > main#app,
+body > .site-footer {
   width: min(calc(100% - var(--page-gutter, 1rem) * 2), var(--page-max-width, 1040px));
   margin-inline: auto;
 }

@@ -19,7 +19,6 @@ const loadSources = () => fetch('/vod.json').then(response => {
 });
 const isHlsUrl = url => /\.m3u8(?:$|[?#])/i.test(url);
 const isDirectMediaUrl = url => /\.(?:m3u8|mp4|m4v|webm|ogv|ogg)(?:$|[?#])/i.test(url);
-const SETTINGS_EVENT = 'tv:open-settings';
 
 function pathTitle(value) {
   return String(value || '')
@@ -33,53 +32,13 @@ function workPath({ title, year }, episodeNumber = '') {
   return episodeNumber ? `${base}/${encodeURIComponent(episodeNumber)}` : base;
 }
 
-function openSettings() {
-  window.dispatchEvent(new Event(SETTINGS_EVENT));
-}
-
-function SettingsTrigger({ children }) {
-  return h('button', { className: 'settings-trigger', type: 'button', onClick: openSettings }, children);
-}
-
-function AppHeader() {
-  return h('header', { className: 'navbar site-header' }, [
-    h('a', { className: 'navbar-brand', href: '/', 'aria-label': 'Lsong’s TV' }, [
-      h('img', { className: 'navbar-brand-mark', src: 'https://lsong.org/assets/web/icon.png', alt: '', 'aria-hidden': 'true' }),
-      h('span', { prefix: 'Lsong’s ', className: 'title' }, 'TV'),
-    ]),
-    h('nav', { 'aria-label': 'Main navigation' }, [
-      h('a', { href: 'https://lsong.org' }, 'Home'),
-      h('a', { href: 'https://lsong.org/posts' }, 'Writing'),
-      h('a', { href: 'https://lsong.org/games' }, 'Games'),
-      h('a', { href: 'https://lsong.org/music' }, 'Music'),
-      h('a', { href: '/', className: 'active' }, 'TV'),
-    ]),
-    h('hr'),
-  ]);
-}
-
-function AppFooter() {
-  return h('footer', { className: 'site-footer footer' }, [
-    h('a', { className: 'navbar-brand', href: 'https://lsong.org' }, [
-      h('img', { className: 'navbar-brand-mark', src: 'https://lsong.org/assets/web/icon.png', alt: '', 'aria-hidden': 'true' }),
-      h('span', null, 'lsong.org'),
-    ]),
-    h('p', null, 'Independent software, made with care.'),
-    h('nav', { 'aria-label': 'Footer navigation' }, [
-      h(SettingsTrigger, null, 'Settings'),
-      h('a', { href: 'mailto:hi@lsong.org' }, 'Email'),
-      h('a', { href: 'https://lsong.org/terms.html' }, 'Terms'),
-      h('a', { href: 'https://lsong.org/privacy.html' }, 'Privacy'),
-    ]),
-  ]);
-}
-
-function PageShell({ children, mainClass = '' }) {
-  return h('div', { className: 'app-shell' }, [
-    h(AppHeader),
-    h('main', { className: `content ${mainClass}`.trim() }, children),
-    h(AppFooter),
-  ]);
+function PageContent({ children, mainClass = '' }) {
+  useEffect(() => {
+    const app = document.getElementById('app');
+    app.className = `content ${mainClass}`.trim();
+    app.removeAttribute('aria-busy');
+  }, [mainClass]);
+  return children;
 }
 
 function Tag({ children, tone = '' }) {
@@ -141,7 +100,7 @@ function CatalogSkeleton({ count = 8 }) {
 }
 
 function DetailSkeleton() {
-  return h(PageShell, { mainClass: 'detail-page' }, [
+  return h(PageContent, { mainClass: 'detail-page' }, [
     h('div', { className: 'detail-skeleton', 'aria-busy': 'true' }, [
       h('div', { className: 'skeleton skeleton-detail-poster' }),
       h('div', { className: 'detail-skeleton-copy' }, [
@@ -202,7 +161,7 @@ function HomeView() {
     ? videos
     : videos.filter(video => (String(video.type || '未分类').trim() || '未分类') === activeFilter);
 
-  return h(PageShell, { mainClass: 'layout-content tv-main' }, [
+  return h(PageContent, { mainClass: 'layout-content tv-main' }, [
     h('section', { className: 'site-hero tv-hero', 'aria-labelledby': 'hero-title' }, [
       h('p', { className: 'eyebrow' }, 'LSONG / TV'),
       h('h1', { id: 'hero-title', className: 'site-hero-title' }, query
@@ -425,7 +384,7 @@ function DetailView({ title, year, requestedEpisode }) {
   }, [title, year, requestedEpisode]);
 
   if (error) {
-    return h(PageShell, null, h('div', { className: 'state full-page' }, [
+    return h(PageContent, null, h('div', { className: 'state full-page' }, [
       h('p', null, `加载失败：${error}`),
       h('a', { href: '/' }, '返回首页'),
     ]));
@@ -447,7 +406,7 @@ function DetailView({ title, year, requestedEpisode }) {
     setActiveGroup(group.key);
     if (nextEpisode) setShareableEpisode(nextEpisode, resolvedIndex);
   };
-  return h(PageShell, { mainClass: 'detail-page' }, [
+  return h(PageContent, { mainClass: 'detail-page' }, [
     h('section', { className: 'detail-hero' }, [
       h('img', {
         className: 'detail-poster',
@@ -499,9 +458,14 @@ function SettingsDialog() {
       setProxy(getProxy());
       showDialog(dialog, { initialFocus: '#proxy' });
     };
-    window.addEventListener(SETTINGS_EVENT, open);
+    const openFromTrigger = event => {
+      if (!event.target.closest?.('[data-settings-trigger]')) return;
+      event.preventDefault();
+      open();
+    };
+    document.addEventListener('click', openFromTrigger);
     return () => {
-      window.removeEventListener(SETTINGS_EVENT, open);
+      document.removeEventListener('click', openFromTrigger);
       unbind();
     };
   }, []);
@@ -558,10 +522,10 @@ function App() {
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
-  return h('div', null, [
-    route.name === 'detail' ? h(DetailView, route) : h(HomeView),
-    h(SettingsDialog),
-  ]);
+  return [
+    route.name === 'detail' ? h(DetailView, { ...route, key: 'view' }) : h(HomeView, { key: 'view' }),
+    h(SettingsDialog, { key: 'settings' }),
+  ];
 }
 
 render(h(App), document.getElementById('app'));

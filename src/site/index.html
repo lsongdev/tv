@@ -18,35 +18,44 @@
   <script type="module" src="/index.js"></script>
 </head>
 <body>
-  <div id="app">
-    <div class="app-shell boot-shell" aria-busy="true">
-      <header class="navbar site-header">
-        <a class="navbar-brand" href="/" aria-label="Lsong’s TV">
-          <img class="navbar-brand-mark" src="https://lsong.org/assets/web/icon.png" alt="">
-          <span prefix="Lsong’s " class="title">TV</span>
-        </a>
-        <nav aria-label="Main navigation">
-          <a href="https://lsong.org">Home</a>
-          <a href="https://lsong.org/posts">Writing</a>
-          <a href="https://lsong.org/games">Games</a>
-          <a href="https://lsong.org/music">Music</a>
-          <a href="/" class="active">TV</a>
-        </nav>
-      </header>
-      <main class="content">
-        <section class="boot-hero">
-          <div class="skeleton boot-heading"></div>
-          <div class="skeleton boot-copy"></div>
-        </section>
-        <section class="video-grid skeleton-grid" aria-label="正在加载视频">
-          <div class="skeleton-card"><div class="skeleton skeleton-poster"></div><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-meta"></div></div>
-          <div class="skeleton-card"><div class="skeleton skeleton-poster"></div><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-meta"></div></div>
-          <div class="skeleton-card"><div class="skeleton skeleton-poster"></div><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-meta"></div></div>
-          <div class="skeleton-card"><div class="skeleton skeleton-poster"></div><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-meta"></div></div>
-        </section>
-      </main>
-    </div>
-  </div>
+  <header class="navbar site-header">
+    <a class="navbar-brand" href="/" aria-label="Lsong’s TV">
+      <img class="navbar-brand-mark" src="https://lsong.org/assets/web/icon.png" alt="">
+      <span prefix="Lsong’s " class="title">TV</span>
+    </a>
+    <nav aria-label="Main navigation">
+      <a href="https://lsong.org">Home</a>
+      <a href="https://lsong.org/posts">Writing</a>
+      <a href="https://lsong.org/games">Games</a>
+      <a href="https://lsong.org/music">Music</a>
+      <a href="https://lsong.org/apps">Apps</a>
+    </nav>
+  </header>
+  <main id="app" class="content boot-shell" aria-busy="true">
+    <section class="boot-hero">
+      <div class="skeleton boot-heading"></div>
+      <div class="skeleton boot-copy"></div>
+    </section>
+    <section class="video-grid skeleton-grid" aria-label="正在加载视频">
+      <div class="skeleton-card"><div class="skeleton skeleton-poster"></div><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-meta"></div></div>
+      <div class="skeleton-card"><div class="skeleton skeleton-poster"></div><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-meta"></div></div>
+      <div class="skeleton-card"><div class="skeleton skeleton-poster"></div><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-meta"></div></div>
+      <div class="skeleton-card"><div class="skeleton skeleton-poster"></div><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-meta"></div></div>
+    </section>
+  </main>
+  <footer class="site-footer footer">
+    <a class="navbar-brand" href="https://lsong.org">
+      <img class="navbar-brand-mark" src="https://lsong.org/assets/web/icon.png" alt="">
+      <span>lsong.org</span>
+    </a>
+    <p>Independent software, made with care.</p>
+    <nav aria-label="Footer navigation">
+      <button class="settings-trigger" type="button" data-settings-trigger>Settings</button>
+      <a href="mailto:hi@lsong.org">Email</a>
+      <a href="https://lsong.org/terms.html">Terms</a>
+      <a href="https://lsong.org/privacy.html">Privacy</a>
+    </nav>
+  </footer>
   <noscript>此网站需要启用 JavaScript。</noscript>
 </body>
 </html>
